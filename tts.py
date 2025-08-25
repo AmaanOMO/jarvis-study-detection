@@ -3,7 +3,7 @@ import io
 import numpy as np
 import soundfile as sf
 import simpleaudio as sa
-from elevenlabs import generate, set_api_key
+from elevenlabs import client
 from typing import Tuple, Optional
 import threading
 import time
@@ -22,8 +22,8 @@ class TTSManager:
         self.voice_id = voice_id
         self.model = model
         
-        # Set API key
-        set_api_key(api_key)
+        # Create client with API key
+        self.client = client.ElevenLabs(api_key=api_key)
         
         # Audio playback state
         self.current_audio: Optional[np.ndarray] = None
@@ -62,7 +62,7 @@ class TTSManager:
         """
         try:
             # Generate audio using ElevenLabs
-            audio = generate(
+            audio = self.client.text_to_speech(
                 text=text,
                 voice=self.voice_id,
                 model=self.model,

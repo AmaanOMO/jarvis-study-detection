@@ -30,7 +30,7 @@ def test_imports():
         return False
     
     try:
-        from elevenlabs import generate, set_api_key
+        from elevenlabs import client
         print("✅ ElevenLabs imported successfully")
     except ImportError as e:
         print(f"❌ ElevenLabs import failed: {e}")
