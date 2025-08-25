@@ -1,0 +1,29 @@
+{
+  "video": { 
+    "width": 1280, 
+    "height": 720, 
+    "cam_width": 840 
+  },
+  "thresholds": {
+    "yaw_deg": 20.0,
+    "pitch_deg": 15.0,
+    "gaze_center_min": 0.35,
+    "gaze_center_max": 0.65,
+    "away_hold_s": 0.6,
+    "cooldown_s": 2.0
+  },
+  "tts": {
+    "voice_id": "REPLACE_ME_WITH_YOUR_VOICE_ID",
+    "speaking_rate": 1.2,
+    "model": "eleven_multilingual_v2",
+    "stability": 0.5,
+    "similarity_boost": 0.7,
+    "style": 0.3
+  },
+  "lines": [
+    "You're not Iron-Man lil bro",
+    "You are not getting into big tech like this, sir.",
+    "Lock in. The code won't write itself.",
+    "Attention drift detected. Return to your work."
+  ]
+}
