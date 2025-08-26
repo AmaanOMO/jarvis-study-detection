@@ -185,8 +185,14 @@ class VoiceBubble:
         Returns:
             True if point is within clickable area
         """
-        return (self.clickable_rect[0] <= x <= self.clickable_rect[2] and
-                self.clickable_rect[1] <= y <= self.clickable_rect[3])
+        # Calculate current bubble center with pulse animation
+        pulse_offset = int(self.pulse_value * 10)
+        current_center_x = self.bubble_center[0] + pulse_offset
+        current_center_y = self.bubble_center[1] + pulse_offset
+        
+        # Check if point is within current bubble radius
+        distance = ((x - current_center_x) ** 2 + (y - current_center_y) ** 2) ** 0.5
+        return distance <= self.bubble_radius
     
     def get_clickable_area(self) -> Tuple[int, int, int, int]:
         """Get the clickable rectangle area (x1, y1, x2, y2)."""

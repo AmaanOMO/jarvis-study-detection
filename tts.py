@@ -61,19 +61,26 @@ class TTSManager:
             Tuple of (audio_samples, envelope, duration_seconds)
         """
         try:
+            print(f"🎤 Starting TTS synthesis for: '{text}'")
+            print(f"🎤 Voice ID: {self.voice_id}, Model: {self.model}")
+            
             # Generate audio using ElevenLabs
             audio_generator = self.client.text_to_speech.convert(
                 voice_id=self.voice_id,
                 text=text,
-                model_id=self.model,
-                voice_settings=self.voice_settings
+                model_id=self.model
+                # Removed voice_settings as they might be causing issues
             )
+            
+            print("🎤 Audio generator created, converting to bytes...")
             
             # Convert generator to bytes
             audio_bytes = b''.join(audio_generator)
+            print(f"🎤 Audio bytes length: {len(audio_bytes)}")
             
             # Convert to numpy array
             audio_array, sample_rate = sf.read(io.BytesIO(audio_bytes))
+            print(f"🎤 Audio array shape: {audio_array.shape}, Sample rate: {sample_rate}")
             
             # Apply speaking rate by resampling
             if speaking_rate != 1.0:

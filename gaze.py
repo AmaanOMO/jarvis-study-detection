@@ -156,27 +156,15 @@ class GazeDetector:
     
     def _determine_status(self, yaw: float, pitch: float, gaze_ratio: float) -> str:
         """Determine if user is looking at screen based on thresholds."""
-        # Use updated thresholds from config
-        yaw_threshold = getattr(self, 'yaw_threshold', 35.0)
-        pitch_threshold = getattr(self, 'pitch_threshold', 25.0)
+        # Since pose estimation is unreliable, use only gaze ratio
         gaze_min = getattr(self, 'gaze_min', 0.25)
         gaze_max = getattr(self, 'gaze_max', 0.75)
         
-        # Primary detection using pose + gaze
-        if (abs(yaw) < yaw_threshold and 
-            abs(pitch) < pitch_threshold and 
-            gaze_min <= gaze_ratio <= gaze_max):
+        # Use gaze ratio as primary detection method
+        if gaze_min <= gaze_ratio <= gaze_max:
             return 'LOOKING'
-        
-        # Fallback: if pose estimation seems wrong (extreme values), use only gaze
-        if abs(yaw) > 90.0 or abs(pitch) > 90.0:
-            # Pose estimation failed, use gaze ratio only
-            if gaze_min <= gaze_ratio <= gaze_max:
-                return 'LOOKING'
-            else:
-                return 'AWAY'
-        
-        return 'AWAY'
+        else:
+            return 'AWAY'
     
     def update_thresholds(self, yaw_deg: float, pitch_deg: float, 
                          gaze_center_min: float, gaze_center_max: float):

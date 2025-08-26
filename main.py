@@ -293,10 +293,18 @@ class JarvisApp:
     
     def _handle_click(self, x: int, y: int):
         """Handle mouse click events."""
+        print(f"🎯 Click detected at ({x}, {y})")
+        print(f"📐 Camera width: {self.config['video']['cam_width']}, Total width: {self.config['video']['width']}")
+        
         # Check if click is in bubble area
         if x > self.config['video']['cam_width'] and self.tts_manager:
             # Adjust x coordinate for bubble area
             bubble_x = x - self.config['video']['cam_width']
+            print(f"🎯 Adjusted bubble coordinates: ({bubble_x}, {y})")
+            
+            # Get clickable area for debugging
+            clickable_area = self.bubble.get_clickable_area()
+            print(f"🎯 Clickable area: {clickable_area}")
             
             if self.bubble.is_clicked(bubble_x, y):
                 print("🎯 Bubble clicked! Triggering TTS...")
@@ -320,8 +328,13 @@ class JarvisApp:
                         
                 except Exception as e:
                     print(f"❌ Failed to synthesize clicked audio: {e}")
+            else:
+                print(f"❌ Click not within bubble bounds")
         else:
-            print(f"Click at ({x}, {y}) - not in bubble area or TTS not available")
+            if not self.tts_manager:
+                print(f"❌ TTS manager not available")
+            else:
+                print(f"❌ Click not in bubble area (x={x} <= cam_width={self.config['video']['cam_width']})")
     
     def _handle_keyboard(self, key: int) -> bool:
         """Handle keyboard input. Returns True if should continue, False to quit."""
