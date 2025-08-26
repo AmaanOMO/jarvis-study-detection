@@ -37,7 +37,7 @@ A minimal Mac-friendly Python app that detects when you're not looking at the sc
    - Update `config.json` with your voice ID
    - Set environment variable:
      ```bash
-     export ELEVEN_API_KEY='your_api_key_here'
+     export ELEVEN_API_KEY='ELEVEN_API_KEY'
      ```
 
 ## Configuration ⚙️

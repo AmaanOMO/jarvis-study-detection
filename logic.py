@@ -43,6 +43,7 @@ class FocusLogic:
                 # Just started being away
                 self.away_start_ts = current_time
                 self._log_event('away_start', 'User started looking away')
+                print(f"🔴 Started looking away at {current_time:.1f}")
             
             # Check if away long enough to trigger roast
             if (self.away_start_ts is not None and 
@@ -55,7 +56,11 @@ class FocusLogic:
                     # Trigger roast
                     self.last_roast_ts = current_time
                     self._log_event('roast', 'Roast triggered after away hold')
+                    print(f"🎤 ROAST TRIGGERED after {current_time - self.away_start_ts:.1f}s away!")
                     return 'ROAST'
+                else:
+                    cooldown_remaining = self.cooldown_s - (current_time - self.last_roast_ts)
+                    print(f"⏳ Cooldown active, {cooldown_remaining:.1f}s remaining")
         else:
             # User is looking
             if self.away_start_ts is not None:
@@ -63,6 +68,7 @@ class FocusLogic:
                 away_duration = current_time - self.away_start_ts
                 self.away_start_ts = None
                 self._log_event('looking_return', f'User returned after {away_duration:.2f}s away')
+                print(f"🟢 Returned to looking after {away_duration:.1f}s away")
         
         return None
     

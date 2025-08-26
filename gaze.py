@@ -125,6 +125,16 @@ class GazeDetector:
         # Determine status based on thresholds
         status = self._determine_status(yaw, pitch, gaze_ratio)
         
+        # Debug logging
+        if hasattr(self, 'debug_counter'):
+            self.debug_counter += 1
+        else:
+            self.debug_counter = 0
+            
+        if self.debug_counter % 30 == 0:  # Log every 30 frames (about 1 second)
+            print(f"DEBUG: Yaw={yaw:.1f}°, Pitch={pitch:.1f}°, Gaze={gaze_ratio:.2f}, Status={status}")
+            print(f"DEBUG: Thresholds - Yaw<{getattr(self, 'yaw_threshold', 20.0)}, Pitch<{getattr(self, 'pitch_threshold', 15.0)}, Gaze[{getattr(self, 'gaze_min', 0.35):.2f}-{getattr(self, 'gaze_max', 0.65):.2f}]")
+        
         return {
             'status': status,
             'yaw': yaw,
@@ -134,11 +144,11 @@ class GazeDetector:
     
     def _determine_status(self, yaw: float, pitch: float, gaze_ratio: float) -> str:
         """Determine if user is looking at screen based on thresholds."""
-        # Load thresholds from config (will be passed from main)
-        yaw_threshold = 20.0
-        pitch_threshold = 15.0
-        gaze_min = 0.35
-        gaze_max = 0.65
+        # Use updated thresholds from config
+        yaw_threshold = getattr(self, 'yaw_threshold', 20.0)
+        pitch_threshold = getattr(self, 'pitch_threshold', 15.0)
+        gaze_min = getattr(self, 'gaze_min', 0.35)
+        gaze_max = getattr(self, 'gaze_max', 0.65)
         
         if (abs(yaw) < yaw_threshold and 
             abs(pitch) < pitch_threshold and 

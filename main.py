@@ -119,7 +119,7 @@ class JarvisApp:
         api_key = os.getenv('ELEVEN_API_KEY')
         if not api_key:
             print("⚠️  Please set ELEVEN_API_KEY environment variable")
-            print("   export ELEVEN_API_KEY='your_api_key_here'")
+            print("   export ELEVEN_API_KEY='ELEVEN_API_KEY'")
             return False
         
         try:
