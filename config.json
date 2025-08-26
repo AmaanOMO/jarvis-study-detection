@@ -13,7 +13,7 @@
     "cooldown_s": 2.0
   },
   "tts": {
-    "voice_id": "REPLACE_ME_WITH_YOUR_VOICE_ID",
+    "voice_id": "lgTvOzcmAJFzkWDfNMwR",
     "speaking_rate": 1.2,
     "model": "eleven_multilingual_v2",
     "stability": 0.5,
