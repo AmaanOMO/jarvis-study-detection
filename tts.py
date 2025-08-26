@@ -30,13 +30,6 @@ class TTSManager:
         self.current_envelope: Optional[np.ndarray] = None
         self.is_playing = False
         self.playback_thread: Optional[threading.Thread] = None
-        
-        # Default voice settings
-        self.voice_settings = {
-            "stability": 0.5,
-            "similarity_boost": 0.7,
-            "style": 0.3
-        }
     
     def update_voice_settings(self, stability: float = None, 
                             similarity_boost: float = None, 
@@ -49,7 +42,7 @@ class TTSManager:
         if style is not None:
             self.voice_settings["style"] = style
     
-    def synth(self, text: str, speaking_rate: float = 1.2) -> Tuple[np.ndarray, np.ndarray, float]:
+    def synth(self, text: str, speaking_rate: float = 1.2) -> Tuple[np.ndarray, np.ndarray, float, int]:
         """
         Synthesize text to speech and compute audio envelope.
         
@@ -64,37 +57,40 @@ class TTSManager:
             print(f"🎤 Starting TTS synthesis for: '{text}'")
             print(f"🎤 Voice ID: {self.voice_id}, Model: {self.model}")
             
-            # Generate audio using ElevenLabs
-            audio_generator = self.client.text_to_speech.convert(
-                voice_id=self.voice_id,
-                text=text,
-                model_id=self.model
-                # Removed voice_settings as they might be causing issues
-            )
+            # Try using the older generate method which might be faster
+            try:
+                from elevenlabs import generate
+                print("🎤 Using generate method for speed...")
+                audio_bytes = generate(
+                    text=text,
+                    voice=self.voice_id,
+                    model=self.model
+                )
+            except ImportError:
+                print("🎤 Using convert method...")
+                audio_generator = self.client.text_to_speech.convert(
+                    voice_id=self.voice_id,
+                    text=text,
+                    model_id=self.model
+                )
+                audio_bytes = b''.join(audio_generator)
             
-            print("🎤 Audio generator created, converting to bytes...")
+            print("🎤 Audio generated, processing...")
             
-            # Convert generator to bytes
-            audio_bytes = b''.join(audio_generator)
+            # audio_bytes is already set from the try/except above
             print(f"🎤 Audio bytes length: {len(audio_bytes)}")
             
-            # Convert to numpy array
+            # Convert to numpy array with minimal processing
             audio_array, sample_rate = sf.read(io.BytesIO(audio_bytes))
             print(f"🎤 Audio array shape: {audio_array.shape}, Sample rate: {sample_rate}")
             
-            # Apply speaking rate by resampling
-            if speaking_rate != 1.0:
-                audio_array = self._resample_audio(audio_array, sample_rate, speaking_rate)
-                # Adjust sample rate for duration calculation
-                sample_rate = sample_rate * speaking_rate
-            
-            # Compute audio envelope
-            envelope = self._compute_envelope(audio_array, sample_rate)
+            # Compute real audio envelope for animation
+            envelope = self._compute_envelope(audio_array if audio_array.ndim == 1 else audio_array[:, 0], sample_rate)
             
             # Calculate duration
             duration = len(audio_array) / sample_rate
             
-            return audio_array, envelope, duration
+            return audio_array, envelope, duration, sample_rate
             
         except Exception as e:
             print(f"TTS synthesis failed: {e}")
@@ -103,14 +99,14 @@ class TTSManager:
             duration = 1.0
             audio_array = np.zeros(int(sample_rate * duration))
             envelope = np.zeros(50)  # 50 envelope points
-            return audio_array, envelope, duration
+            return audio_array, envelope, duration, sample_rate
     
     def _resample_audio(self, audio: np.ndarray, sample_rate: int, rate_multiplier: float) -> np.ndarray:
         """Simple resampling by interpolation."""
         if rate_multiplier == 1.0:
             return audio
         
-        # Calculate new length
+        # Calculate new length - FIXED: higher rate = shorter audio = faster speech
         new_length = int(len(audio) / rate_multiplier)
         
         # Create time arrays
@@ -193,21 +189,26 @@ class TTSManager:
     def _playback_worker(self, audio: np.ndarray, sample_rate: int):
         """Worker thread for audio playback."""
         try:
-            # Ensure audio is in correct format
+            # Handle mono or stereo properly
+            channels = 1 if audio.ndim == 1 else audio.shape[1]
+            
+            # Convert to int16 with proper clipping
             if audio.dtype != np.int16:
-                # Convert to 16-bit PCM
-                audio_16bit = (audio * 32767).astype(np.int16)
+                audio_16bit = (np.clip(audio, -1.0, 1.0) * 32767).astype(np.int16)
             else:
                 audio_16bit = audio
             
-            # Play audio
-            play_obj = sa.play_buffer(audio_16bit, 1, 2, sample_rate)
+            # Play audio with correct channel count
+            play_obj = sa.play_buffer(audio_16bit.tobytes(), channels, 2, sample_rate)
             play_obj.wait_done()
             
         except Exception as e:
             print(f"Playback worker error: {e}")
         finally:
             self.is_playing = False
+            # Notify that playback has ended
+            if hasattr(self, 'on_playback_end'):
+                self.on_playback_end()
     
     def stop(self):
         """Stop current audio playback."""

@@ -13,17 +13,21 @@
     "cooldown_s": 2.0
   },
   "tts": {
-    "voice_id": "lgTvOzcmAJFzkWDfNMwR",
-    "speaking_rate": 1.2,
-    "model": "eleven_multilingual_v2",
-    "stability": 0.5,
-    "similarity_boost": 0.7,
-    "style": 0.3
+    "voice_id": "4vOiqlwv4zrjTAfCi6km",
+    "speaking_rate": 1.3,
+    "model": "eleven_monolingual_v1"
   },
   "lines": [
     "You're not Iron-Man lil bro",
     "You are not getting into big tech like this, sir.",
     "Lock in. The code won't write itself.",
     "Attention drift detected. Return to your work."
-  ]
+  ],
+  "hud": {
+    "layout": "full",
+    "orb_base_radius": 110,
+    "sweep_count": 8,
+    "ring_offsets": [-40, 0, 30],
+    "typewriter_cps": 40
+  }
 }
