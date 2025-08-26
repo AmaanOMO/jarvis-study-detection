@@ -305,22 +305,22 @@ class JarvisApp:
             )
             
             if self.tts_manager.play(audio, sample_rate=sample_rate):
-                    self.speaking_start_time = time.time()
-                    self.current_envelope = envelope
-                    self.last_spoken_line = roast_line
-                    self.hud.set_speaking(True, roast_line)
-                    
-                    # Broadcast to web HUD
-                    broadcast({
-                        "type": "speak",
-                        "text": roast_line,
-                        "envelope": envelope.tolist()
-                    })
-                    broadcast({"type": "playing", "value": True})
-                    
-                    self._log_event('roast', f"Played: {roast_line}")
-                else:
-                    print(f"Failed to play roast: {roast_line}")
+                self.speaking_start_time = time.time()
+                self.current_envelope = envelope
+                self.last_spoken_line = roast_line
+                self.hud.set_speaking(True, roast_line)
+                
+                # Broadcast to web HUD
+                broadcast({
+                    "type": "speak",
+                    "text": roast_line,
+                    "envelope": envelope.tolist()
+                })
+                broadcast({"type": "playing", "value": True})
+                
+                self._log_event('roast', f"Played: {roast_line}")
+            else:
+                print(f"Failed to play roast: {roast_line}")
                 
         except Exception as e:
             print(f"Failed to synthesize roast: {e}")
