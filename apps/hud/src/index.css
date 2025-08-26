@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer components {
+  .jarvis-glow {
+    filter: drop-shadow(0 0 20px #5AB4FF);
+  }
+  
+  .jarvis-text-glow {
+    text-shadow: 0 0 10px #5AB4FF;
+  }
+}
