@@ -10,6 +10,7 @@ import json
 import os
 import time
 import csv
+import numpy as np
 from datetime import datetime
 from typing import Optional, Dict, Any
 
@@ -200,7 +201,16 @@ class JarvisApp:
         # Place camera frame on left side
         y_offset = (cam_height - new_h) // 2
         x_offset = (cam_width - new_w) // 2
-        canvas[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = resized_frame
+        
+        # Ensure offsets are within bounds
+        y_offset = max(0, min(y_offset, cam_height - new_h))
+        x_offset = max(0, min(x_offset, cam_width - new_w))
+        
+        # Ensure we don't exceed canvas bounds
+        end_y = min(y_offset + new_h, cam_height)
+        end_x = min(x_offset + new_w, cam_width)
+        
+        canvas[y_offset:end_y, x_offset:end_x] = resized_frame[:end_y-y_offset, :end_x-x_offset]
         
         # Add HUD overlay on camera
         self._draw_camera_hud(canvas, gaze_result)
