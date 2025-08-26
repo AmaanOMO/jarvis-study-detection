@@ -28,6 +28,7 @@ from logic import FocusLogic
 from tts import TTSManager
 from bubble import VoiceBubble
 from hud import JarvisHUD
+from ws_bridge import start_ws_server_in_thread, broadcast, on_click
 
 class JarvisApp:
     def __init__(self, config_path: str = "config.json"):
@@ -304,13 +305,22 @@ class JarvisApp:
             )
             
             if self.tts_manager.play(audio, sample_rate=sample_rate):
-                self.speaking_start_time = time.time()
-                self.current_envelope = envelope
-                self.last_spoken_line = roast_line
-                self.hud.set_speaking(True, roast_line)
-                self._log_event('roast', f"Played: {roast_line}")
-            else:
-                print(f"Failed to play roast: {roast_line}")
+                    self.speaking_start_time = time.time()
+                    self.current_envelope = envelope
+                    self.last_spoken_line = roast_line
+                    self.hud.set_speaking(True, roast_line)
+                    
+                    # Broadcast to web HUD
+                    broadcast({
+                        "type": "speak",
+                        "text": roast_line,
+                        "envelope": envelope.tolist()
+                    })
+                    broadcast({"type": "playing", "value": True})
+                    
+                    self._log_event('roast', f"Played: {roast_line}")
+                else:
+                    print(f"Failed to play roast: {roast_line}")
                 
         except Exception as e:
             print(f"Failed to synthesize roast: {e}")
@@ -382,6 +392,12 @@ class JarvisApp:
         """Main application loop."""
         print("🚀 Starting Jarvis Study Detection...")
         
+        # Start WebSocket server
+        start_ws_server_in_thread()
+        
+        # Register click handler for web HUD
+        on_click(lambda: self._trigger_default_roast())
+        
         # Initialize TTS
         if not self.initialize_tts():
             print("⚠️  Continuing without TTS functionality")
@@ -423,6 +439,10 @@ class JarvisApp:
                 
                 # Process frame
                 output_frame = self.process_frame(frame)
+                
+                # Broadcast status to web HUD
+                current_status = self.focus_logic.get_status()
+                broadcast({"type": "status", "value": current_status})
                 
                 # Update animations
                 current_time = time.time()
@@ -476,6 +496,43 @@ class JarvisApp:
     def _on_tts_playback_end(self):
         """Called when TTS playback ends."""
         self.hud.set_speaking(False)
+        # Broadcast to web HUD
+        broadcast({"type": "playing", "value": False})
+    
+    def _trigger_default_roast(self):
+        """Trigger the default roast line from web HUD click."""
+        if not self.tts_manager:
+            return
+            
+        default_line = "You're not Iron-Man lil bro"
+        print(f"🎯 Web HUD triggered default roast: {default_line}")
+        
+        try:
+            audio, envelope, duration, sample_rate = self.tts_manager.synth(
+                default_line,
+                self.config['tts']['speaking_rate']
+            )
+            
+            if self.tts_manager.play(audio, sample_rate=sample_rate):
+                self.speaking_start_time = time.time()
+                self.current_envelope = envelope
+                self.last_spoken_line = default_line
+                self.hud.set_speaking(True, default_line)
+                
+                # Broadcast to web HUD
+                broadcast({
+                    "type": "speak",
+                    "text": default_line,
+                    "envelope": envelope.tolist()
+                })
+                broadcast({"type": "playing", "value": True})
+                
+                self._log_event('web_click', f"Web HUD triggered: {default_line}")
+            else:
+                print("❌ Failed to play default roast")
+                
+        except Exception as e:
+            print(f"❌ Failed to synthesize default roast: {e}")
 
 def main():
     """Main entry point."""
