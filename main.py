@@ -299,6 +299,7 @@ class JarvisApp:
             bubble_x = x - self.config['video']['cam_width']
             
             if self.bubble.is_clicked(bubble_x, y):
+                print("🎯 Bubble clicked! Triggering TTS...")
                 # Force speak the default line
                 default_line = "You're not Iron-Man lil bro"
                 self.bubble.set_text(default_line)
@@ -313,11 +314,14 @@ class JarvisApp:
                         self.speaking_start_time = time.time()
                         self.current_envelope = envelope
                         self._log_event('click', f"Clicked bubble: {default_line}")
+                        print(f"✅ TTS playing: {default_line}")
                     else:
-                        print("Failed to play clicked audio")
+                        print("❌ Failed to play clicked audio")
                         
                 except Exception as e:
-                    print(f"Failed to synthesize clicked audio: {e}")
+                    print(f"❌ Failed to synthesize clicked audio: {e}")
+        else:
+            print(f"Click at ({x}, {y}) - not in bubble area or TTS not available")
     
     def _handle_keyboard(self, key: int) -> bool:
         """Handle keyboard input. Returns True if should continue, False to quit."""

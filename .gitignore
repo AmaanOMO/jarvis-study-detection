@@ -1,10 +1,14 @@
-# Environment variables
+# Environment variables and secrets
 .env
 .env.local
 .env.*.local
 .env.development
 .env.test
 .env.production
+secrets.json
+config.local.json
+*.key
+*.pem
 
 # Python
 __pycache__/
@@ -36,15 +40,16 @@ ENV/
 .venv/
 .env/
 
-# IDE
+# IDE and editors
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.DS_Store
+Thumbs.db
 
 # macOS
-.DS_Store
 .AppleDouble
 .LSOverride
 Icon
@@ -62,19 +67,35 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-# Logs
+# Logs and data
 logs/
 *.log
+*.csv
+data/
+output/
 
-# Audio files (if any are generated)
+# Audio files
 *.wav
 *.mp3
 *.ogg
+*.flac
+*.aac
 
 # Temporary files
 *.tmp
 *.temp
+*.bak
+*.backup
 
-# API keys and secrets
-secrets.json
-config.local.json
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json

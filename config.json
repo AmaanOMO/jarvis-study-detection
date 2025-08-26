@@ -5,11 +5,11 @@
     "cam_width": 840 
   },
   "thresholds": {
-    "yaw_deg": 20.0,
-    "pitch_deg": 15.0,
-    "gaze_center_min": 0.35,
-    "gaze_center_max": 0.65,
-    "away_hold_s": 0.6,
+    "yaw_deg": 35.0,
+    "pitch_deg": 25.0,
+    "gaze_center_min": 0.25,
+    "gaze_center_max": 0.75,
+    "away_hold_s": 0.8,
     "cooldown_s": 2.0
   },
   "tts": {
