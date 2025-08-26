@@ -4,3 +4,4 @@ numpy
 elevenlabs
 simpleaudio
 soundfile
+python-dotenv

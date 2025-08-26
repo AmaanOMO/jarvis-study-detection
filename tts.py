@@ -62,15 +62,18 @@ class TTSManager:
         """
         try:
             # Generate audio using ElevenLabs
-            audio = self.client.text_to_speech(
+            audio_generator = self.client.text_to_speech.convert(
+                voice_id=self.voice_id,
                 text=text,
-                voice=self.voice_id,
-                model=self.model,
+                model_id=self.model,
                 voice_settings=self.voice_settings
             )
             
+            # Convert generator to bytes
+            audio_bytes = b''.join(audio_generator)
+            
             # Convert to numpy array
-            audio_array, sample_rate = sf.read(io.BytesIO(audio))
+            audio_array, sample_rate = sf.read(io.BytesIO(audio_bytes))
             
             # Apply speaking rate by resampling
             if speaking_rate != 1.0:

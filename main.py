@@ -14,6 +14,14 @@ import numpy as np
 from datetime import datetime
 from typing import Optional, Dict, Any
 
+# Load environment variables from .env file if it exists
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not installed, continue without it
+    pass
+
 # Local imports
 from gaze import GazeDetector
 from logic import FocusLogic
@@ -217,7 +225,10 @@ class JarvisApp:
         
         # Place bubble on right side
         bubble_canvas = canvas[:, cam_width:]
-        bubble_output = self.bubble.draw(bubble_canvas, self.tts_manager.is_playing_audio() if self.tts_manager else False)
+        is_speaking = (self.tts_manager and 
+                      hasattr(self.tts_manager, 'is_playing') and 
+                      self.tts_manager.is_playing) if self.tts_manager else False
+        bubble_output = self.bubble.draw(bubble_canvas, is_speaking)
         canvas[:, cam_width:] = bubble_output
         
         return canvas
@@ -374,7 +385,9 @@ class JarvisApp:
                 self.bubble.update_animation(delta_time)
                 
                 # Update bubble pulse from audio envelope
-                if (self.tts_manager and self.tts_manager.is_playing_audio() and 
+                if (self.tts_manager and 
+                    hasattr(self.tts_manager, 'is_playing') and 
+                    self.tts_manager.is_playing and 
                     self.current_envelope):
                     # Get current envelope value based on playback progress
                     progress = (current_time - self.speaking_start_time) / 2.0  # Approximate duration

@@ -35,9 +35,14 @@ A minimal Mac-friendly Python app that detects when you're not looking at the sc
    - Get your API key from [ElevenLabs](https://elevenlabs.io/)
    - Get your voice ID from the ElevenLabs dashboard
    - Update `config.json` with your voice ID
-   - Set environment variable:
+   - **Option 1: Use .env file (recommended)**
      ```bash
-     export ELEVEN_API_KEY='ELEVEN_API_KEY'
+     cp env.example .env
+     # Edit .env and add your actual API key
+     ```
+   - **Option 2: Set environment variable**
+     ```bash
+     export ELEVEN_API_KEY='your_api_key_here'
      ```
 
 ## Configuration ⚙️
