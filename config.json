@@ -24,7 +24,7 @@
     "Attention drift detected. Return to your work."
   ],
   "hud": {
-    "layout": "full",
+    "layout": "split",
     "orb_base_radius": 110,
     "sweep_count": 8,
     "ring_offsets": [-40, 0, 30],

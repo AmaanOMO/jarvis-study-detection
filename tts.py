@@ -30,6 +30,9 @@ class TTSManager:
         self.current_envelope: Optional[np.ndarray] = None
         self.is_playing = False
         self.playback_thread: Optional[threading.Thread] = None
+        
+        # Callback for playback end
+        self.on_playback_end = None
     
     def update_voice_settings(self, stability: float = None, 
                             similarity_boost: float = None, 
@@ -41,6 +44,10 @@ class TTSManager:
             self.voice_settings["similarity_boost"] = similarity_boost
         if style is not None:
             self.voice_settings["style"] = style
+    
+    def set_playback_end_callback(self, callback):
+        """Set callback function to be called when playback ends."""
+        self.on_playback_end = callback
     
     def synth(self, text: str, speaking_rate: float = 1.2) -> Tuple[np.ndarray, np.ndarray, float, int]:
         """
@@ -206,8 +213,8 @@ class TTSManager:
             print(f"Playback worker error: {e}")
         finally:
             self.is_playing = False
-            # Notify that playback has ended
-            if hasattr(self, 'on_playback_end'):
+            # Call callback if set
+            if self.on_playback_end:
                 self.on_playback_end()
     
     def stop(self):

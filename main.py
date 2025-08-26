@@ -51,8 +51,12 @@ class JarvisApp:
             height=self.config['video']['height']
         )
         
-        # HUD component
-        self.hud = JarvisHUD(self.config['video']['width'], self.config['video']['height'], self.config)
+        # Initialize HUD
+        self.hud = JarvisHUD(
+            width=self.config['video']['width'] - self.config['video']['cam_width'],
+            height=self.config['video']['height'],
+            config=self.config
+        )
         
         # Video capture
         self.cap: Optional[cv2.VideoCapture] = None
@@ -62,7 +66,6 @@ class JarvisApp:
         self.speaking_start_time = 0
         self.current_envelope: Optional[list] = None
         self.last_spoken_line = ""
-        self.last_frame_time = time.time()
         
         # Logging
         self.logs_dir = "logs"
@@ -142,9 +145,6 @@ class JarvisApp:
                 voice_id=voice_id,
                 model=self.config['tts']['model']
             )
-            
-            # Set callback for when playback ends
-            self.tts_manager.on_playback_end = self._on_tts_playback_end
             
             # Update voice settings
             self.tts_manager.update_voice_settings(
@@ -232,13 +232,26 @@ class JarvisApp:
         # Add HUD overlay on camera
         self._draw_camera_hud(canvas, gaze_result)
         
-        # Place bubble on right side
-        bubble_canvas = canvas[:, cam_width:]
-        is_speaking = (self.tts_manager and 
-                      hasattr(self.tts_manager, 'is_playing') and 
-                      self.tts_manager.is_playing) if self.tts_manager else False
-        bubble_output = self.bubble.draw(bubble_canvas, is_speaking)
-        canvas[:, cam_width:] = bubble_output
+        # Place HUD on right side
+        hud_canvas = canvas[:, cam_width:]
+        
+        # Calculate pulse from audio envelope
+        pulse = 0.0
+        if (self.tts_manager and 
+            hasattr(self.tts_manager, 'is_playing') and 
+            self.tts_manager.is_playing and 
+            self.current_envelope is not None):
+            current_time = time.time()
+            progress = (current_time - self.speaking_start_time) / 2.0  # Approximate duration
+            if 0 <= progress <= 1:
+                envelope_index = int(progress * len(self.current_envelope))
+                if envelope_index < len(self.current_envelope):
+                    pulse = self.current_envelope[envelope_index]
+        
+        # Draw HUD
+        hud_output = self.hud.draw(hud_canvas, gaze_result['status'], 
+                                  self.last_spoken_line, pulse, 0.016)  # ~60 FPS
+        canvas[:, cam_width:] = hud_output
         
         return canvas
     
@@ -280,9 +293,7 @@ class JarvisApp:
         roast_line = self.config['lines'][self.current_roast_index]
         self.current_roast_index = (self.current_roast_index + 1) % len(self.config['lines'])
         
-        # Update HUD and bubble text
-        self.last_spoken_line = roast_line
-        self.hud.set_speaking(True, roast_line)
+        # Set bubble text
         self.bubble.set_text(roast_line)
         
         # Synthesize and play
@@ -295,71 +306,58 @@ class JarvisApp:
             if self.tts_manager.play(audio, sample_rate=sample_rate):
                 self.speaking_start_time = time.time()
                 self.current_envelope = envelope
+                self.last_spoken_line = roast_line
+                self.hud.set_speaking(True, roast_line)
                 self._log_event('roast', f"Played: {roast_line}")
             else:
                 print(f"Failed to play roast: {roast_line}")
-                self.hud.set_speaking(False)
                 
         except Exception as e:
             print(f"Failed to synthesize roast: {e}")
-            self.hud.set_speaking(False)
     
     def _handle_click(self, x: int, y: int):
         """Handle mouse click events."""
         print(f"🎯 Click detected at ({x}, {y})")
+        print(f"📐 Camera width: {self.config['video']['cam_width']}, Total width: {self.config['video']['width']}")
         
-        if not self.tts_manager:
-            print(f"❌ TTS manager not available")
-            return
-        
-        # Handle HUD orb click
-        if self.hud.layout == "full":
-            # Full-screen mode: check if click is on orb
-            if self.hud.hit_test_orb(x, y):
-                print("🎯 HUD orb clicked! Triggering TTS...")
-                self._trigger_orb_click()
-            else:
-                print(f"🎯 Click at ({x}, {y}) - not on orb")
-        else:
-            # Split mode: check both bubble and HUD orb
-            if x > self.config['video']['cam_width']:
-                # Right panel - check HUD orb
-                hud_x = x - self.config['video']['cam_width']
-                if self.hud.hit_test_orb(hud_x, y):
-                    print("🎯 HUD orb clicked! Triggering TTS...")
-                    self._trigger_orb_click()
-                else:
-                    print(f"🎯 Click at ({x}, {y}) - not on orb")
-            else:
-                # Left panel - camera area
-                print(f"🎯 Click at ({x}, {y}) - camera area")
-    
-    def _trigger_orb_click(self):
-        """Handle orb click to trigger TTS."""
-        default_line = "You're not Iron-Man lil bro"
-        self.last_spoken_line = default_line
-        self.hud.set_speaking(True, default_line)
-        
-        try:
-            audio, envelope, duration, sample_rate = self.tts_manager.synth(
-                default_line,
-                self.config['tts']['speaking_rate']
-            )
+        # Check if click is in HUD area
+        if x > self.config['video']['cam_width'] and self.tts_manager:
+            # Adjust x coordinate for HUD area
+            hud_x = x - self.config['video']['cam_width']
+            print(f"🎯 Adjusted HUD coordinates: ({hud_x}, {y})")
             
-            if self.tts_manager.play(audio, sample_rate=sample_rate):
-                self.speaking_start_time = time.time()
-                self.current_envelope = envelope
-                self._log_event('click', f"Clicked orb: {default_line}")
-                print(f"✅ TTS playing: {default_line}")
-            else:
-                print("❌ Failed to play clicked audio")
+            # Check if click is on the orb
+            if self.hud.hit_test_orb(hud_x, y):
+                print("🎯 Orb clicked! Triggering TTS...")
+                # Force speak the default line
+                default_line = "You're not Iron-Man lil bro"
+                self.bubble.set_text(default_line)
                 
-        except Exception as e:
-            print(f"❌ Failed to synthesize clicked audio: {e}")
-    
-    def _on_tts_playback_end(self):
-        """Callback when TTS playback ends."""
-        self.hud.set_speaking(False)
+                try:
+                    audio, envelope, duration, sample_rate = self.tts_manager.synth(
+                        default_line,
+                        self.config['tts']['speaking_rate']
+                    )
+                    
+                    if self.tts_manager.play(audio, sample_rate=sample_rate):
+                        self.speaking_start_time = time.time()
+                        self.current_envelope = envelope
+                        self.last_spoken_line = default_line
+                        self.hud.set_speaking(True, default_line)
+                        self._log_event('click', f"Clicked bubble: {default_line}")
+                        print(f"✅ TTS playing: {default_line}")
+                    else:
+                        print("❌ Failed to play clicked audio")
+                        
+                except Exception as e:
+                    print(f"❌ Failed to synthesize clicked audio: {e}")
+            else:
+                print(f"❌ Click not within bubble bounds")
+        else:
+            if not self.tts_manager:
+                print(f"❌ TTS manager not available")
+            else:
+                print(f"❌ Click not in bubble area (x={x} <= cam_width={self.config['video']['cam_width']})")
     
     def _handle_keyboard(self, key: int) -> bool:
         """Handle keyboard input. Returns True if should continue, False to quit."""
@@ -373,6 +371,8 @@ class JarvisApp:
         elif key == ord('r') or key == ord('R'):
             self.focus_logic.reset_cooldown()
             self.bubble.set_text("")
+            self.hud.set_speaking(False)
+            self.last_spoken_line = ""
             self._log_event('reset', "Cooldown reset")
             print("Cooldown reset")
         
@@ -385,6 +385,9 @@ class JarvisApp:
         # Initialize TTS
         if not self.initialize_tts():
             print("⚠️  Continuing without TTS functionality")
+        else:
+            # Set callback for TTS playback end
+            self.tts_manager.set_playback_end_callback(self._on_tts_playback_end)
         
         # Initialize video capture
         if not self.start_video_capture():
@@ -418,17 +421,15 @@ class JarvisApp:
                     print("Failed to read frame")
                     break
                 
-                # Process frame and get status
-                gaze_result = self.gaze_detector.detect(frame)
-                status_text = gaze_result['status']
+                # Process frame
+                output_frame = self.process_frame(frame)
                 
                 # Update animations
                 current_time = time.time()
                 delta_time = current_time - last_time
                 self.bubble.update_animation(delta_time)
                 
-                # Compute pulse from audio envelope
-                pulse = 0.0
+                # Update bubble pulse from audio envelope
                 if (self.tts_manager and 
                     hasattr(self.tts_manager, 'is_playing') and 
                     self.tts_manager.is_playing and 
@@ -438,19 +439,7 @@ class JarvisApp:
                     if 0 <= progress <= 1:
                         envelope_index = int(progress * len(self.current_envelope))
                         if envelope_index < len(self.current_envelope):
-                            pulse = self.current_envelope[envelope_index]
-                
-                # Render HUD based on layout
-                if self.hud.layout == "full":
-                    # Full-screen HUD mode
-                    hud_canvas = np.zeros((self.config['video']['height'], self.config['video']['width'], 3), dtype=np.uint8)
-                    output_frame = self.hud.draw(hud_canvas, status_text, self.last_spoken_line, pulse, delta_time)
-                else:
-                    # Split mode: camera on left, HUD on right
-                    output_frame = self.process_frame(frame)
-                    # Draw HUD on right panel
-                    hud_canvas = output_frame[:, self.config['video']['cam_width']:]
-                    hud_canvas = self.hud.draw(hud_canvas, status_text, self.last_spoken_line, pulse, delta_time)
+                            self.bubble.set_pulse_intensity(self.current_envelope[envelope_index])
                 
                 # Display frame
                 cv2.imshow(window_name, output_frame)
@@ -483,6 +472,10 @@ class JarvisApp:
         
         self._log_event('quit', 'Application closed')
         print("✅ Cleanup complete")
+    
+    def _on_tts_playback_end(self):
+        """Called when TTS playback ends."""
+        self.hud.set_speaking(False)
 
 def main():
     """Main entry point."""
