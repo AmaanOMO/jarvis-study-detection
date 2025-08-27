@@ -294,6 +294,13 @@ class JarvisApp:
         roast_line = self.config['lines'][self.current_roast_index]
         self.current_roast_index = (self.current_roast_index + 1) % len(self.config['lines'])
         
+        # Add some Jarvis personality with random witty suffixes
+        roast_line = self._add_jarvis_personality(roast_line)
+        
+        # Add context-aware commentary based on away duration
+        away_duration = self.focus_logic.get_away_duration()
+        roast_line = self._add_context_awareness(roast_line, away_duration)
+        
         # Set bubble text
         self.bubble.set_text(roast_line)
         
@@ -325,6 +332,103 @@ class JarvisApp:
         except Exception as e:
             print(f"Failed to synthesize roast: {e}")
     
+    def _add_jarvis_personality(self, base_line: str) -> str:
+        """Add Jarvis-style personality and wit to roast lines."""
+        import random
+        
+        # Jarvis-style suffixes that add personality
+        jarvis_suffixes = [
+            " *sigh*",
+            " *rolls eyes*",
+            " *chuckles*",
+            " *sarcastic*",
+            " *slow clap*",
+            " *raises eyebrow*",
+            " *unimpressed*",
+            " *amused*",
+            " *classic*",
+            " *obviously*",
+            " *naturally*",
+            " *of course*",
+            " *shocking*",
+            " *surprising*",
+            " *predictable*",
+            " *inevitable*"
+        ]
+        
+        # Jarvis-style prefixes for variety
+        jarvis_prefixes = [
+            "Heh, ",
+            "Oh, ",
+            "Well, ",
+            "Ah, ",
+            "Breaking news: ",
+            "Update: ",
+            "Alert: ",
+            "Notice: ",
+            "FYI: ",
+            "Just saying: ",
+            "For the record: ",
+            "In case you were wondering: "
+        ]
+        
+        # 30% chance to add a prefix
+        if random.random() < 0.3:
+            base_line = random.choice(jarvis_prefixes) + base_line
+        
+        # 40% chance to add a suffix
+        if random.random() < 0.4:
+            base_line = base_line + random.choice(jarvis_suffixes)
+        
+        # 20% chance to add both
+        if random.random() < 0.2:
+            base_line = random.choice(jarvis_prefixes) + base_line + random.choice(jarvis_suffixes)
+        
+        return base_line
+    
+    def _add_context_awareness(self, base_line: str, away_duration: float) -> str:
+        """Add context-aware commentary based on how long user has been away."""
+        import random
+        
+        # Context-aware additions based on away duration
+        if away_duration >= 5.0:
+            # Been away for a while - more dramatic
+            dramatic_additions = [
+                " I was beginning to think you'd abandoned the project entirely.",
+                " At this rate, the code will be obsolete before you finish it.",
+                " Your attention span is truly... impressive. In the worst way possible.",
+                " I've seen glaciers move faster than your focus.",
+                " This is getting concerning, sir. Should I call for help?"
+            ]
+            if random.random() < 0.6:  # 60% chance for dramatic addition
+                base_line += random.choice(dramatic_additions)
+        
+        elif away_duration >= 3.0:
+            # Medium away time - mildly sarcastic
+            medium_additions = [
+                " Classic you.",
+                " As expected.",
+                " How very... consistent.",
+                " *sigh* Predictable.",
+                " Another day, another distraction."
+            ]
+            if random.random() < 0.4:  # 40% chance for medium addition
+                base_line += random.choice(medium_additions)
+        
+        elif away_duration >= 1.0:
+            # Short away time - light teasing
+            light_additions = [
+                " Already?",
+                " That was quick.",
+                " Impressive speed.",
+                " New record?",
+                " Efficiently inefficient."
+            ]
+            if random.random() < 0.3:  # 30% chance for light addition
+                base_line += random.choice(light_additions)
+        
+        return base_line
+    
     def _handle_click(self, x: int, y: int):
         """Handle mouse click events."""
         print(f"🎯 Click detected at ({x}, {y})")
@@ -340,7 +444,7 @@ class JarvisApp:
             if self.hud.hit_test_orb(hud_x, y):
                 print("🎯 Orb clicked! Triggering TTS...")
                 # Force speak the default line
-                default_line = "You're not Iron-Man lil bro"
+                default_line = "You're not Iron Man lil bro"
                 self.bubble.set_text(default_line)
                 
                 try:

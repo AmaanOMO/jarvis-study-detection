@@ -9,19 +9,20 @@
     "pitch_deg": 25.0,
     "gaze_center_min": 0.25,
     "gaze_center_max": 0.75,
-    "away_hold_s": 0.8,
+            "away_hold_s": 0.6,
     "cooldown_s": 2.0
   },
   "tts": {
     "voice_id": "4vOiqlwv4zrjTAfCi6km",
-    "speaking_rate": 1.3,
-    "model": "eleven_monolingual_v1"
+    "speaking_rate": 1.8,
+    "model": "eleven_monolingual_v1",
+    "stability": 0.5,
+    "similarity_boost": 0.75,
+    "style": 0.0
   },
   "lines": [
-    "You're not Iron-Man lil bro",
-    "You are not getting into big tech like this, sir.",
-    "Lock in. The code won't write itself.",
-    "Attention drift detected. Return to your work."
+    "System alert: you're one more distraction away from a 9-to-5 in Excel.",
+    "Yea you're not breaking into big tech like this you lazy fuck"
   ],
   "hud": {
     "layout": "split",

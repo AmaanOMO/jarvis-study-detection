@@ -18,6 +18,7 @@ class FocusLogic:
         self.last_roast_ts: Optional[float] = None
         self.active: bool = True
         self.current_status: str = 'LOOKING'
+        self.roast_triggered_this_away: bool = False  # Prevent multiple triggers per away session
         
         # Event tracking
         self.events: list = []
@@ -47,7 +48,8 @@ class FocusLogic:
             
             # Check if away long enough to trigger roast
             if (self.away_start_ts is not None and 
-                current_time - self.away_start_ts >= self.away_hold_s):
+                current_time - self.away_start_ts >= self.away_hold_s and
+                not self.roast_triggered_this_away):
                 
                 # Check cooldown
                 if (self.last_roast_ts is None or 
@@ -55,6 +57,7 @@ class FocusLogic:
                     
                     # Trigger roast
                     self.last_roast_ts = current_time
+                    self.roast_triggered_this_away = True  # Mark as triggered for this away session
                     self._log_event('roast', 'Roast triggered after away hold')
                     print(f"🎤 ROAST TRIGGERED after {current_time - self.away_start_ts:.1f}s away!")
                     return 'ROAST'
@@ -67,6 +70,7 @@ class FocusLogic:
                 # Just returned to looking
                 away_duration = current_time - self.away_start_ts
                 self.away_start_ts = None
+                self.roast_triggered_this_away = False  # Reset flag for next away session
                 self._log_event('looking_return', f'User returned after {away_duration:.2f}s away')
                 print(f"🟢 Returned to looking after {away_duration:.1f}s away")
         
